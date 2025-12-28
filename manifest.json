@@ -1,23 +1,15 @@
 {
   "manifest_version": 3,
-  "name": "Apsidyne - Snippet Manager",
+  "name": "Pro Snippet Tool",
   "version": "1.0.0",
-  "description": "Simple text snippet manager for efficiency.",
-  "permissions": [
-    "storage", 
-    "activeTab",
-    "scripting"
-  ],
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "128": "icons/icon128.png"
+  "description": "キーワードを定型文に置換する。",
+  "permissions": ["storage"],
+  "options_page": "options.html",
+  "content_scripts": [
+    {
+      "matches": ["<all_urls>"],
+      "js": ["content_script.js"],
+      "run_at": "document_end"
     }
-  },
-  "background": {
-    "service_worker": "background.js"
-  },
-  "icons": {
-    "128": "icons/icon128.png"
-  }
+  ]
 }
