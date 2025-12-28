@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <style>
+    body { width: 300px; padding: 10px; font-family: sans-serif; background-color: #f9f9f9; }
+    h3 { margin-top: 0; color: #333; }
+    textarea { width: 100%; height: 80px; margin-bottom: 10px; box-sizing: border-box; }
+    button { width: 100%; padding: 8px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px; }
+    button:hover { background-color: #0056b3; }
+    #status { margin-top: 10px; font-size: 12px; color: green; height: 1.2em; }
+  </style>
+</head>
+<body>
+  <h3>Apsidyne</h3>
+  <textarea id="snippetText" placeholder="ここに保存したいテキストを入力..."></textarea>
+  <button id="saveBtn">Save Snippet</button>
+  <div style="height: 10px;"></div>
+  <button id="loadBtn" style="background-color: #28a745;">Load & Copy</button>
+  <div id="status"></div>
+  <script src="popup.js"></script>
+</body>
+</html>

@@ -1,0 +1,23 @@
+{
+  "manifest_version": 3,
+  "name": "Apsidyne - Snippet Manager",
+  "version": "1.0.0",
+  "description": "Simple text snippet manager for efficiency.",
+  "permissions": [
+    "storage", 
+    "activeTab",
+    "scripting"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "128": "icons/icon128.png"
+    }
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "icons": {
+    "128": "icons/icon128.png"
+  }
+}
