@@ -1,0 +1,298 @@
+@charset "UTF-8";
+
+/**
+ * Options Page Styles
+ *  @author Apsidyne＠gmail.com
+**/
+
+:root {
+    /* カラーパレット定義 */
+    --primary-color: #0056b3;
+    --primary-hover: #004494;
+    --danger-color: #d32f2f;
+    --danger-hover: #b71c1c;
+    --success-color: #2e7d32;
+    --bg-color: #f5f7fa;
+    --card-bg: #ffffff;
+    --text-main: #333333;
+    --text-sub: #666666;
+    --border-color: #e0e0e0;
+}
+
+/* ベースリセット */
+* {
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    background-color: var(--bg-color);
+    color: var(--text-main);
+    margin: 0;
+    padding: 20px;
+    line-height: 1.6;
+}
+
+/* レイアウトコンテナ */
+.container {
+    max-width: 900px;
+    margin: 0 auto;
+    padding-bottom: 50px;
+}
+
+header {
+    margin-bottom: 30px;
+    border-bottom: 2px solid var(--border-color);
+    padding-bottom: 10px;
+}
+
+header h1 {
+    margin: 0;
+    font-size: 24px;
+    color: var(--text-main);
+}
+
+.subtitle {
+    margin: 5px 0 0;
+    color: var(--text-sub);
+    font-size: 14px;
+}
+
+/* カード共通スタイル */
+.card {
+    background: var(--card-bg);
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+    padding: 24px;
+    margin-bottom: 24px;
+    border: 1px solid var(--border-color);
+}
+
+.card h2 {
+    margin-top: 0;
+    margin-bottom: 20px;
+    font-size: 18px;
+    border-left: 4px solid var(--primary-color);
+    padding-left: 10px;
+}
+
+/* フォーム周り */
+.form-group {
+    margin-bottom: 16px;
+}
+
+label {
+    display: block;
+    margin-bottom: 6px;
+    font-weight: 600;
+}
+
+input[type="text"],
+textarea,
+select {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 16px;
+    transition: border-color 0.2s;
+}
+
+input[type="text"]:focus,
+textarea:focus {
+    border-color: var(--primary-color);
+    outline: none;
+    box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1);
+}
+
+textarea {
+    font-family: monospace; /* コード入力しやすく */
+    resize: vertical;
+}
+
+small {
+    display: block;
+    color: var(--text-sub);
+    margin-top: 4px;
+    font-size: 12px;
+}
+
+/* ボタン */
+.btn {
+    display: inline-block;
+    padding: 10px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    text-align: center;
+    transition: background-color 0.2s;
+}
+
+.btn.primary {
+    background-color: var(--primary-color);
+    color: #fff;
+}
+.btn.primary:hover {
+    background-color: var(--primary-hover);
+}
+
+.btn.secondary {
+    background-color: #e0e0e0;
+    color: #333;
+}
+.btn.secondary:hover {
+    background-color: #d5d5d5;
+}
+
+.btn.warning {
+    background-color: var(--danger-color);
+    color: #fff;
+}
+.btn.warning:hover {
+    background-color: var(--danger-hover);
+}
+
+.btn-sm {
+    padding: 6px 12px;
+    font-size: 12px;
+    margin-right: 4px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    border-radius: 4px;
+}
+
+.btn-edit {
+    background-color: #f0f0f0;
+    border-color: #ccc;
+}
+.btn-delete {
+    background-color: #ffebee;
+    color: var(--danger-color);
+    border-color: #ffcdd2;
+}
+
+/* テーブルエリア */
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 15px;
+}
+
+#searchBox {
+    width: 250px;
+    padding: 8px;
+}
+
+.table-wrapper {
+    overflow-x: auto;
+}
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 14px;
+}
+
+th, td {
+    text-align: left;
+    padding: 12px;
+    border-bottom: 1px solid var(--border-color);
+}
+
+th {
+    background-color: #f9f9f9;
+    font-weight: 600;
+    color: var(--text-sub);
+}
+
+tr:hover {
+    background-color: #fcfcfc;
+}
+
+/* 長いテキストの折り返し制御 */
+td {
+    word-break: break-all; 
+    vertical-align: top;
+}
+
+/* バックアップエリア */
+.backup-controls {
+    display: flex;
+    gap: 30px;
+    flex-wrap: wrap;
+}
+
+.backup-controls .group {
+    flex: 1;
+    min-width: 280px;
+}
+
+.backup-controls h3 {
+    font-size: 16px;
+    margin-bottom: 10px;
+    color: var(--text-main);
+}
+
+.file-input-wrapper {
+    margin-bottom: 10px;
+}
+
+.radio-group {
+    margin-bottom: 10px;
+}
+
+.radio-group label {
+    display: inline-block;
+    margin-right: 15px;
+    font-weight: normal;
+}
+
+/* オプション画面内トースト通知 */
+#toastContainer {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 1000;
+}
+
+.toast {
+    min-width: 200px;
+    padding: 12px 20px;
+    background: #333;
+    color: #fff;
+    border-radius: 4px;
+    margin-top: 10px;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+}
+
+.toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+.toast-success { border-left: 4px solid var(--success-color); }
+.toast-error { border-left: 4px solid var(--danger-color); }
+
+/* レスポンシブ調整 */
+@media (max-width: 600px) {
+    .backup-controls {
+        flex-direction: column;
+        gap: 20px;
+    }
+    
+    .list-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 10px;
+    }
+    
+    #searchBox {
+        width: 100%;
+    }
+}

@@ -1,93 +1,329 @@
 /**
- * Simple Snippet Tool 
- */
+ * Apsidyne Entry Assistant Snippet Tool
+ *  : ユーザーのキー入力を監視し、キーワード置換とDOM操作を行う。
+ *  @author Apsidyne＠gmail.com
+ *  @version 1.0.0
+ **/
 
-let snippetCache = [];
+import { Logger } from './lib/logger.js';
+//const logger = new Logger('ContentScript');
 
-// 初期化：データの読み込み
-const init = () => {
-    chrome.storage.local.get('snippetList', (data) => {
-        if (data.snippetList) snippetCache = data.snippetList;
-    });
-    chrome.storage.onChanged.addListener((changes) => {
-        if (changes.snippetList) snippetCache = changes.snippetList.newValue || [];
-    });
-};
+(function () {
+    'use strict';
 
-// 置換実行ロジック
-const performReplacement = (element, trigger, replacement) => {
-    try {
-        // type="number" など selectionEnd が使えない時
-        // 不動産の数値入力欄でエラーが起きないように
-        let selectionEnd = 0;
-        try {
-            selectionEnd = element.selectionEnd;
-        } catch (e) {
-            // selectionEndが取得できないタイプのinputは対象外として処理を中断
-            return;
-        }
+//    import { Logger } from 'lib/logger.js';
+const logger = new Logger('ContentScript');
 
-        const startPos = selectionEnd - trigger.length;
-        if (startPos < 0) return;
+    // 多重読み込み防止
+    if (window.hasRealEstateSnippetRun) {
+        logger.debug('すでにロード済み。');
+        return;
+    }
+    window.hasRealEstateSnippetRun = true;
 
-        // イベント競合を防ぐための遅延実行(Next Tick)
-        setTimeout(() => {
-            element.focus();
+    /**
+     * スニペットエンジンクラス
+     * 状態管理とDOM操作の責務を持つ
+     */
+    class SnippetEngine {
+        constructor() {
+            // スニペット辞書（メモリキャッシュ）
+            // I/O負荷を下げるため、起動時にロードし、変更時のみ更新する
+            this.snippets = {}; 
             
-            // トリガー部分（キーワード）を選択状態にする
-            element.setSelectionRange(startPos, selectionEnd);
+            // IME入力中かどうかのフラグ
+            // 日本語入力確定前のエンターなどで誤爆しないために必須
+            this.isComposing = false;
 
-            // ブラウザ標準のテキスト挿入コマンド（Undo履歴が残る）
-            const success = document.execCommand('insertText', false, replacement);
+            // 初期化
+            this.init();
+        }
 
-            // execCommand がブロックされた場合の強制書き換え（フォールバック）
-            if (!success) {
-                const val = element.value;
-                const before = val.substring(0, startPos);
-                const after = val.substring(selectionEnd);
-                element.value = before + replacement + after;
-                
-                // サイト側のバリデーション（必須項目チェック等）を反応させるための通知
-                element.dispatchEvent(new Event('input', { bubbles: true }));
-                element.dispatchEvent(new Event('change', { bubbles: true }));
+        /**
+         * 初期化処理
+         */
+        async init() {
+            try {
+                await this.loadSnippets();
+                this.attachEventListeners();
+                this.listenForStorageChanges();
+                 logger.info('起動した ');
+            } catch (e) {
+                logger.error('初期化エラー:', e);
+
             }
-        }, 0);
+        }
 
-    } catch (error) {
-        // 業務を止めないよう、エラーはコンソールに出すだけ
-        console.warn("[SnippetTool] Skip:", error);
-    }
-};
+        /**
+         * ストレージからスニペット定義をロード
+         */
+        async loadSnippets() {
+            return new Promise((resolve) => {
+                chrome.storage.local.get(['snippets'], (result) => {
+                    this.snippets = result.snippets || {};
+                    resolve();
+                });
+            });
+        }
 
-// 入力監視
-const handleInput = (event) => {
-    // IME変換中（日本語入力中）は何もしない
-    if (event.isComposing) return;
+        /**
+         * オプション画面での変更をリアルタイムに反映
+         */
+        listenForStorageChanges() {
+            chrome.storage.onChanged.addListener((changes, area) => {
+                if (area === 'local' && changes.snippets) {
+                    this.snippets = changes.snippets.newValue;
+                     logger.info('定義を更新した');
+                }
+            });
+        }
 
-    const target = event.target;
-    
-    // 入力欄以外は無視
-    if (target.tagName !== 'INPUT' && target.tagName !== 'TEXTAREA') return;
-    if (target.type === 'password') return;
-    if (target.readOnly || target.disabled) return;
+        /**
+         * イベントリスナーの登録
+         * focusinではなくkeydown/inputをdocumentレベルで監視することで
+         * 動的に生成されるフォーム（モーダル等）にも対応する
+         */
+        attachEventListeners() {
+            // IME開始
+            document.addEventListener('compositionstart', () => {
+                this.isComposing = true;
+            }, true);
 
-    const val = target.value;
-    if (!val) return;
+            // IME終了
+            document.addEventListener('compositionend', () => {
+                this.isComposing = false;
+            }, true);
 
-    const currentHost = window.location.hostname.toLowerCase();
+            // キー入力監視
+            document.addEventListener('keydown', (e) => this.handleKeydown(e), true);
+        }
 
-    // スニペット検索
-    for (const item of snippetCache) {
-        // ドメイン指定がある場合のみチェック（入稿サイト以外での誤爆防止）
-        if (item.domain && !currentHost.includes(item.domain)) continue;
+        /**
+         * キー入力ハンドラ
+         * トリガーとなる「;」の検知と処理の分岐
+         */
+        handleKeydown(e) {
+            // 入力可能な要素でなければ無視
+            const target = e.target;
+            if (!this.isInputable(target)) return;
 
-        // トリガー検知
-        if (val.endsWith(item.trigger)) {
-            performReplacement(target, item.trigger, item.text);
-            break; // 1つ見つかったら終了
+            // IME入力中は一切関与しない（超重要）
+            if (this.isComposing) return;
+
+            // トリガーキー（;）の判定 (KeyCode 187 or Key: ";")
+            // JISキーボードとUSキーボードの差異を吸収するため event.key を優先
+            if (e.key === ';') {
+                this.processTrigger(e, target);
+            }
+        }
+
+        /**
+         * 入力可能要素かどうかの判定
+         * @param {HTMLElement} el 
+         */
+        isInputable(el) {
+            const tagName = el.tagName.toLowerCase();
+            const isContentEditable = el.isContentEditable;
+            const isInput = tagName === 'input' && ['text', 'search', 'url', 'tel', 'email'].includes(el.type);
+            const isTextarea = tagName === 'textarea';
+
+            return isInput || isTextarea || isContentEditable;
+        }
+
+        /**
+         * トリガー検知時の処理
+         * @param {KeyboardEvent} e 
+         * @param {HTMLElement} target 
+         */
+        processTrigger(e, target) {
+            // カーソル位置と現在の値を取得
+            const { value, selectionStart } = this.getInputState(target);
+            
+            // カーソル位置の直前の文字を取得（エスケープ判定用）
+            const charBeforeCursor = value.slice(selectionStart - 1, selectionStart);
+
+            // エスケープ処理: 直前が ";" の場合（つまり ";;" と入力された）
+            if (charBeforeCursor === ';') {
+                e.preventDefault(); // 2つ目のセミコロン入力を阻止
+                // 前のセミコロンを削除して、単一のセミコロンとして確定させるか、何もしないか。
+                // 仕様：「;;」→「;」
+                // 実装：直前の「;」を削除し、改めて「;」を入れる（あるいは何もしないで放置だと「;」が残る）
+                // 確実に「ただの文字としてのセミコロン」にするため、特別な置換処理は走らせず終了。
+                // ただし、このままだと「;」が1つ残る状態。
+                // ユーザーは「;;」と打とうとした。1つ目はすでに入っている。
+                // 2つ目を押した瞬間ここに来る。
+                // 1つ目の「;」はトリガー待ち状態だったが、2つ目が来たので「文字としての;」と確定する。
+                // つまり、何もしなければ1つ目の「;」が残る。それでOK。
+                // ただし、2つ目の入力自体は preventDefault しているので画面には出ない。これで「;;」→「;」達成。
+                return;
+            }
+
+            // キーワードマッチング
+            // カーソル直前の単語を探す
+            // パフォーマンス考慮: 全文検索せず、カーソル前から最大50文字程度をスキャンすれば十分
+            const scanLength = 50;
+            const scanStart = Math.max(0, selectionStart - scanLength);
+            const textToScan = value.slice(scanStart, selectionStart);
+
+            // ロングマッチ優先のため、登録されているキーワードでループして後方一致を確認
+            let matchedKeyword = null;
+            
+            // Object.keysの順序は保証されないが、一般的な実装では登録順か辞書順。
+            // 本来はキーワードの長さ順（長い順）にソートしてチェックすべき。
+            const sortedKeys = Object.keys(this.snippets).sort((a, b) => b.length - a.length);
+
+            for (const key of sortedKeys) {
+                if (textToScan.endsWith(key)) {
+                    matchedKeyword = key;
+                    break;
+                }
+            }
+
+            if (matchedKeyword) {
+                // 置換処理実行
+                e.preventDefault(); // トリガーの「;」入力を阻止
+                const replacement = this.snippets[matchedKeyword];
+                this.executeReplacement(target, matchedKeyword, replacement);
+            }
+            // マッチしない場合は、通常の「;」入力としてブラウザに処理させる
+        }
+
+        /**
+         * 要素の状態（値とカーソル位置）を取得するヘルパー
+         * input/textarea と contentEditable で取得方法が異なる
+         */
+        getInputState(target) {
+            if (target.value !== undefined) {
+                return { value: target.value, selectionStart: target.selectionStart };
+            } else {
+                // contentEditable対応（簡易実装）
+                // ※実務レベルではSelection APIを駆使してより厳密な位置特定が必要
+                const selection = window.getSelection();
+                // 簡易的に textContent を返す
+                return { value: target.textContent, selectionStart: selection.focusOffset }; 
+            }
+        }
+
+        /**
+         * テキスト置換の実行（核心部）
+         * @param {HTMLElement} target 
+         * @param {string} keyword 
+         * @param {string} replacement 
+         */
+        executeReplacement(target, keyword, replacement) {
+            logger.info(`Expanding: "${keyword}" -> "${replacement.substring(0, 10)}..."`);
+
+            try {
+                // 1. フォーカスを確実にする
+                target.focus();
+
+                // 2. Undo履歴を保存するために execCommand('insertText') を使用する。
+                // これは非推奨だが、execCommand以外にブラウザのUndoスタックに載せる方法が存在しない。
+                // ClipboardAPIを使う手もあるが、権限周りが面倒かつ遅い。
+                
+                if (document.queryCommandSupported('insertText')) {
+                    // キーワード部分を選択状態にする
+                    // input / textarea
+                    if (['INPUT', 'TEXTAREA'].includes(target.tagName)) {
+                        const endPos = target.selectionStart;
+                        const startPos = endPos - keyword.length;
+                        target.setSelectionRange(startPos, endPos);
+                        
+                        // 選択範囲（キーワード）を置換テキストで上書き
+                        document.execCommand('insertText', false, replacement);
+                    } else {
+                        // contentEditable
+                        // Rangeを使って選択範囲を作成
+                        const selection = window.getSelection();
+                        const range = selection.getRangeAt(0);
+                        
+                        // ※contentEditable内のカーソル位置計算は非常に複雑だが、
+                        // ここでは「直前に入力していたテキストノード」内での置換を想定
+                        // 厳密なDOMトラバーサルは省略するが、通常のテキスト入力であればこれで動く
+                        const textNode = range.startContainer;
+                        if (textNode.nodeType === Node.TEXT_NODE) {
+                            const endOffset = range.startOffset;
+                            const startOffset = endOffset - keyword.length;
+                            
+                            if (startOffset >= 0) {
+                                range.setStart(textNode, startOffset);
+                                range.setEnd(textNode, endOffset);
+                                selection.removeAllRanges();
+                                selection.addRange(range);
+                                document.execCommand('insertText', false, replacement);
+                            }
+                        }
+                    }
+                } else {
+                    // フォールバック: execCommandが使えない場合（稀だが将来的にあり得る）
+                    // 直接値を書き換える（Undoは効かなくなる）
+                    logger.debug('execCommand not supported. Fallback to direct manipulation.');
+                    this.fallbackReplacement(target, keyword, replacement);
+                }
+
+                // 3. SPA (React/Vue/Angular) 向けにイベントを発火
+                // これをやらないと、仮想DOMが値を認識せず、保存時に空になる
+                this.dispatchInputEvents(target);
+
+            } catch (err) {
+                logger.error('置換処理中にエラー:', err);
+                // ユーザーに通知（トースト）
+                this.showToast('展開に失敗しました', 'error');
+            }
+        }
+
+        /**
+         * 直接書き換え
+         */
+        fallbackReplacement(target, keyword, replacement) {
+             if (target.value !== undefined) {
+                const current = target.value;
+                const end = target.selectionStart;
+                const start = end - keyword.length;
+                const newValue = current.slice(0, start) + replacement + current.slice(end);
+                
+                target.value = newValue;
+                // カーソル位置調整
+                const newCursorPos = start + replacement.length;
+                target.setSelectionRange(newCursorPos, newCursorPos);
+             }
+        }
+
+        /**
+         * モダンフレームワーク用のイベント発火
+         * React等は input イベントや change イベントを監視している
+         */
+        dispatchInputEvents(target) {
+            // inputイベント: 値が変更された瞬間に発火
+            const inputEvent = new Event('input', { bubbles: true, cancelable: true });
+            target.dispatchEvent(inputEvent);
+
+            // changeイベント: 確定時（フォーカスアウト等）によく使われるが、念のため発火
+            const changeEvent = new Event('change', { bubbles: true, cancelable: true });
+            target.dispatchEvent(changeEvent);
+        }
+        
+        /**
+         * 簡易トースト通知（要件：モーダル禁止）
+         */
+        showToast(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `re-snippet-toast re-snippet-toast-${type}`;
+            div.textContent = message;
+            document.body.appendChild(div);
+            
+            // アニメーション用クラス付与
+            setTimeout(() => div.classList.add('show'), 10);
+            
+            // 3秒後に消去
+            setTimeout(() => {
+                div.classList.remove('show');
+                setTimeout(() => div.remove(), 300);
+            }, 3000);
         }
     }
-};
 
-document.addEventListener('input', handleInput, true);
-init();
+    // インスタンス化して開始
+    new SnippetEngine();
+
+})();

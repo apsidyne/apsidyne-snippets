@@ -1,15 +1,27 @@
 {
   "manifest_version": 3,
-  "name": "Pro Snippet Tool",
-  "version": "1.0.0",
-  "description": "キーワードを定型文に置換する。",
+  "name": "__MSG_extName__",
+  "version": "1.0.4",
+  "default_locale": "ja",
+  "description": "__MSG_extDescription__",
   "permissions": ["storage"],
-  "options_page": "options.html",
+  "options_page": "options/options.html",
   "content_scripts": [
     {
       "matches": ["<all_urls>"],
-      "js": ["content_script.js"],
+      "js": ["loader.js"],
+      "css": ["style.css"],
       "run_at": "document_end"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "content_script.js",
+        "lib/logger.js",
+        "lib/sanitizer.js"
+      ],
+      "matches": ["<all_urls>"]
     }
   ]
 }

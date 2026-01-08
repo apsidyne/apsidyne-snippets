@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>入力支援設定 - Real Estate Assistant</title>
+    <link rel="stylesheet" href="options.css">
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>入力支援設定</h1>
+            <p class="subtitle">スニペット管理とデータ保守</p>
+        </header>
+
+        <main>
+            <section class="card editor-area">
+                <h2>新規登録 / 編集</h2>
+                <form id="snippetForm">
+                    <div class="form-group">
+                        <label for="inputKeyword">キーワード (接尾辞なし)</label>
+                        <input type="text" id="inputKeyword" placeholder="例: k" required>
+                        <small>入力時はこれに「;」を付けて呼び出します。</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="inputReplacement">展開テキスト (HTML可)</label>
+                        <textarea id="inputReplacement" rows="4" placeholder="例: <b>交通:</b> 徒歩5分<br>"></textarea>
+                        <small>許可タグ: &lt;b&gt;, &lt;font&gt;, &lt;br&gt; 等。スクリプトは除去されます。</small>
+                    </div>
+
+                    <div class="actions">
+                        <button type="submit" class="btn primary">保存</button>
+                        <button type="button" id="btnCancel" class="btn secondary" style="display:none;">キャンセル</button>
+                    </div>
+                </form>
+            </section>
+
+            <section class="card list-area">
+                <div class="list-header">
+                    <h2>登録済みスニペット (<span id="count">0</span>件)</h2>
+                    <input type="text" id="searchBox" placeholder="キーワードを検索...">
+                </div>
+                <div class="table-wrapper">
+                    <table id="snippetTable">
+                        <thead>
+                            <tr>
+                                <th width="20%">キーワード</th>
+                                <th width="60%">展開内容 (プレビュー)</th>
+                                <th width="20%">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <section class="card backup-area">
+                <h2>バックアップ / 復元</h2>
+                <div class="backup-controls">
+                    <div class="group">
+                        <h3>エクスポート</h3>
+                        <button id="btnExport" class="btn">JSONで保存</button>
+                    </div>
+                    <div class="group">
+                        <h3>インポート</h3>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="fileImport" accept=".json">
+                        </div>
+                        <div class="radio-group">
+                            <label><input type="radio" name="importMode" value="merge" checked> 追加(マージ)</label>
+                            <label><input type="radio" name="importMode" value="overwrite"> 完全上書き</label>
+                        </div>
+                        <button id="btnImport" class="btn warning">読み込み実行</button>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <div id="toastContainer"></div>
+
+    <script type="module" src="options.js"></script>
+</body>
+</html>

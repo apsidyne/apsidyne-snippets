@@ -1,0 +1,67 @@
+@charset "UTF-8";
+
+/**
+ * Content Script Styles
+ *  @author Apsidyne＠gmail.com
+ **/
+
+/* トースト通知のベーススタイル */
+.re-snippet-toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    z-index: 2147483647; /* 32bit符号付き整数の最大値 (安全圏) */
+    
+    min-width: 250px;
+    max-width: 400px;
+    padding: 12px 20px;
+    
+    background-color: #333; /* デフォルト背景色 */
+    color: #fff;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    
+    border-radius: 4px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    
+    /* アニメーション初期状態 */
+    opacity: 0;
+    transform: translateY(20px);
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    
+    /* ユーザー操作の邪魔をしないよう、通知上のクリック以外は透過させる */
+    pointer-events: none; 
+}
+
+/* 表示状態（JSで付与） */
+.re-snippet-toast.show {
+    opacity: 1;
+    transform: translateY(0);
+}
+
+/* タイプ別の色分け */
+.re-snippet-toast-info {
+    background-color: #323232;
+    border-left: 4px solid #2196F3; /* 青 */
+}
+
+.re-snippet-toast-success {
+    background-color: #323232;
+    border-left: 4px solid #4CAF50; /* 緑 */
+}
+
+.re-snippet-toast-error {
+    background-color: #323232;
+    border-left: 4px solid #F44336; /* 赤 */
+}
+
+/* * 防御的CSSリセット
+ * 注入先のサイトが div や p に強力なスタイル（!important等）を当てている場合に備え、
+ * この要素内だけはプロパティを初期化する
+ */
+.re-snippet-toast, .re-snippet-toast * {
+    box-sizing: border-box;
+    text-align: left;
+    margin: 0;
+}
