@@ -1,3 +1,4 @@
+# apsidyne-snippets
 #
 # Apsidyne Entry Assistant Snippet Tool
 
