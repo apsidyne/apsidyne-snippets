@@ -1,18 +1,33 @@
 /**
  * Apsidyne Entry Assistant Snippet Tool
  *  : ユーザーのキー入力を監視し、キーワード置換とDOM操作を行う。
- *  @author Apsidyne＠gmail.com
+ *  @author Apsidyne+ext2025[at]gmail.com
  *  @version 1.0.0
  **/
 
+
+// スニペット展開のトリガーとなる文字
+// KeyCode 187 or Key: ";")
+//const TRIGGER_KEY = ';';
+
+
+//
+import { config , setDebugMode, getDebugMode} from './config.js';
 import { Logger } from './lib/logger.js';
-//const logger = new Logger('ContentScript');
+
 
 (function () {
     'use strict';
 
-//    import { Logger } from 'lib/logger.js';
-const logger = new Logger('ContentScript');
+    const logger = new Logger('ContentScript');
+
+    logger.info(config.TRIGGER_KEY);
+    config.debugMode = getDebugMode();
+    console.log("config.debugMode",config.debugMode);
+
+logger.info("info");
+logger.debug("debug");
+logger.error("error","error");
 
     // 多重読み込み防止
     if (window.hasRealEstateSnippetRun) {
@@ -107,12 +122,12 @@ const logger = new Logger('ContentScript');
             const target = e.target;
             if (!this.isInputable(target)) return;
 
-            // IME入力中は一切関与しない（超重要）
+            // IME入力中は変換しない
             if (this.isComposing) return;
 
             // トリガーキー（;）の判定 (KeyCode 187 or Key: ";")
             // JISキーボードとUSキーボードの差異を吸収するため event.key を優先
-            if (e.key === ';') {
+            if (e.key === config.TRIGGER_KEY ) {
                 this.processTrigger(e, target);
             }
         }
@@ -143,7 +158,7 @@ const logger = new Logger('ContentScript');
             const charBeforeCursor = value.slice(selectionStart - 1, selectionStart);
 
             // エスケープ処理: 直前が ";" の場合（つまり ";;" と入力された）
-            if (charBeforeCursor === ';') {
+            if (charBeforeCursor === config.TRIGGER_KEY ) {
                 e.preventDefault(); // 2つ目のセミコロン入力を阻止
                 // 前のセミコロンを削除して、単一のセミコロンとして確定させるか、何もしないか。
                 // 仕様：「;;」→「;」
@@ -174,18 +189,44 @@ const logger = new Logger('ContentScript');
 
             for (const key of sortedKeys) {
                 if (textToScan.endsWith(key)) {
-                    matchedKeyword = key;
-                    break;
+                    if (this.isSnippetAllowedForCurrentSite(key)) {
+                        matchedKeyword = key;
+                        break;
+                    }
                 }
             }
 
             if (matchedKeyword) {
                 // 置換処理実行
                 e.preventDefault(); // トリガーの「;」入力を阻止
-                const replacement = this.snippets[matchedKeyword];
-                this.executeReplacement(target, matchedKeyword, replacement);
+                // データを取り出し (オブジェクトか文字列か正規化して扱う)
+                const rawVal = this.snippets[matchedKeyword];
+                const replacementText = (typeof rawVal === 'string') ? rawVal : rawVal.body;
+
+                this.executeReplacement(target, matchedKeyword, replacementText);
             }
             // マッチしない場合は、通常の「;」入力としてブラウザに処理させる
+        }
+
+        /**
+        * 指定されたキーワードが現在のサイトで有効か判定
+        */
+        isSnippetAllowedForCurrentSite(key) {
+            const rawVal = this.snippets[key];
+        
+            // 古いデータ(文字列)の場合は「全サイト許可」とみなす
+            if (typeof rawVal === 'string') return true;
+
+           const allowedSites = rawVal.sites;
+        
+            // サイト指定が空配列なら「全サイト許可」
+            if (!allowedSites || allowedSites.length === 0) return true;
+
+            // 現在のホスト名
+            const currentHost = window.location.hostname;
+
+            // 後方一致でチェック (例: suumo.jp は k-entry.suumo.jp にマッチ)
+            return allowedSites.some(site => currentHost.endsWith(site));
         }
 
         /**
@@ -205,7 +246,7 @@ const logger = new Logger('ContentScript');
         }
 
         /**
-         * テキスト置換の実行（核心部）
+         * テキスト置換の実行
          * @param {HTMLElement} target 
          * @param {string} keyword 
          * @param {string} replacement 
@@ -268,7 +309,7 @@ const logger = new Logger('ContentScript');
             } catch (err) {
                 logger.error('置換処理中にエラー:', err);
                 // ユーザーに通知（トースト）
-                this.showToast('展開に失敗しました', 'error');
+                this.showToast('展開処理に失敗しました', 'error');
             }
         }
 

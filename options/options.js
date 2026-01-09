@@ -1,6 +1,6 @@
  /**
   * Apsidyne Tool - Options
-  *  @author Apsidyne＠gmail.com
+  *  @author Apsidyne+ext2025[at]gmail.com
  **/
 
 import { Sanitizer } from '../lib/sanitizer.js';
@@ -20,7 +20,9 @@ const elements = {
     btnExport: document.getElementById('btnExport'),
     btnImport: document.getElementById('btnImport'),
     fileImport: document.getElementById('fileImport'),
-    importRadios: document.getElementsByName('importMode')
+    importRadios: document.getElementsByName('importMode'),
+    sites: document.getElementById('inputSites'),
+    debugCheckbox: document.getElementById('checkDebugMode')
 };
 
 // 状態管理
@@ -33,6 +35,7 @@ let editTargetKeyword = null; // 編集中のキーワード（キー変更検�
 async function init() {
     try {
         await loadSnippets();
+        await loadSettings();
         renderTable();
         attachEvents();
     } catch (e) {
@@ -66,8 +69,26 @@ async function saveSnippets(newSnippets) {
             // キーワードはトリム
             const cleanKey = key.trim();
             if (!cleanKey) continue;
+
             // 値はサニタイズ
-            sanitizedSnippets[cleanKey] = Sanitizer.sanitize(val);
+            let dataToSave;
+
+            if (typeof val === 'string') {
+                // 旧形式(文字列)が来た場合、新形式にアップグレードして保存
+                dataToSave = {
+                    body: Sanitizer.sanitize(val),
+                    sites: []
+                };
+            } else {
+                // 新形式(オブジェクト)の場合
+                // 中の .body プロパティをサニタイズする
+                dataToSave = {
+                    body: Sanitizer.sanitize(val.body || ''),
+                    sites: Array.isArray(val.sites) ? val.sites : []
+                };
+            }
+
+            sanitizedSnippets[cleanKey] = dataToSave;
         }
 
         chrome.storage.local.set({ snippets: sanitizedSnippets }, () => {
@@ -80,6 +101,50 @@ async function saveSnippets(newSnippets) {
         });
     });
 }
+
+/**
+ * 設定をロード
+ */
+
+const loadSettings = async () => {
+    try {
+        const result = await chrome.storage.local.get(['settings']);
+        const settings = result.settings || {};
+        
+        // チェックボックスに反映
+        elements.debugCheckbox.checked = !!settings.debugMode;
+    } catch (e) {
+        showToast(`設定読み込みエラー: ${e.message}`, 'error');
+    }
+};
+
+const saveSettings = async () => {
+    try {
+        const isDebug = elements.debugCheckbox.checked;
+        
+        // 既存の設定を取得してマージ（今はdebugModeしかないが、将来のため）
+        const result = await chrome.storage.local.get(['settings']);
+        const currentSettings = result.settings || {};
+        
+        const newSettings = {
+            ...currentSettings,
+            debugMode: isDebug
+        };
+
+        await chrome.storage.local.set({ settings: newSettings });
+        
+        if (isDebug) {
+            showToast('デバッグモードをONにしました。');
+        } else {
+            showToast('デバッグモードをOFFにしました。');
+        }
+
+    } catch (e) {
+        showToast(`設定保存エラー: ${e.message}`, 'error');
+    }
+};
+
+
 
 /**
  * イベントリスナー設定
@@ -115,6 +180,26 @@ function attachEvents() {
             handleEdit(key);
         }
     });
+    // degbug on/off
+    elements.debugCheckbox.addEventListener('change', saveSettings);
+}
+
+/**
+ * データを正規化してオブジェクト形式にする
+ * 古いデータ構造に考慮するため
+ */
+function normalizeSnippet(val) {
+    if (!val) return { body: '', sites: [] };
+
+    if (typeof val === 'string') {
+        // 旧形式の場合は、全サイト対象
+        return { body: val, sites: [] };
+    }
+    // オブジェクトならそのまま（念のため構造チェック追加予定）
+    return { 
+        body: val.body || '', 
+        sites: Array.isArray(val.sites) ? val.sites : [] 
+    };
 }
 
 /**
@@ -123,25 +208,34 @@ function attachEvents() {
 async function handleFormSubmit() {
     const keyword = elements.keyword.value.trim();
     const rawReplacement = elements.replacement.value;
+    const rawSites = elements.sites.value;
 
     if (!keyword) {
         showToast('キーワードを入力してください', 'error');
         return;
     }
+    // サイトリストのパース (カンマ区切り → 配列)
+    const sites = rawSites.split(',')
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
 
-    // サニタイズ実行
-    const cleanReplacement = Sanitizer.sanitize(rawReplacement);
+    // 新しいデータ構造を作成
+    const newEntry = {
+        body: Sanitizer.sanitize(rawReplacement),
+        sites: sites
+    };
 
+ 
     // キー変更のチェック（編集モード時）
     if (editTargetKeyword && editTargetKeyword !== keyword) {
-        // キーが変わった場合、古いキーを削除する必要がある
-        // ただし、新しいキーが既に存在する場合は上書き確認が必要だが
-        // 今回はシンプルに上書きする仕様とする（必要ならconfirmを入れる）
+        // キーが変わった場合、古いキーを削除する
+        // 新しいキーが既に存在する場合は上書き確認が必要なのだが
+        // 今は上書きする仕様にする（confirmを入れるかも）
         delete currentSnippets[editTargetKeyword];
     }
 
     // 更新
-    currentSnippets[keyword] = cleanReplacement;
+    currentSnippets[keyword] = newEntry;
 
     try {
         await saveSnippets(currentSnippets);
@@ -159,9 +253,13 @@ async function handleFormSubmit() {
 function handleEdit(key) {
     const val = currentSnippets[key];
     if (val === undefined) return;
+    if (!val) return;
+
+    const data = normalizeSnippet(val);
 
     elements.keyword.value = key;
-    elements.replacement.value = val;
+    elements.replacement.value = data.body;
+    elements.sites.value = data.sites.join(', ');
     editTargetKeyword = key;
 
     elements.btnCancel.style.display = 'inline-block';
@@ -214,28 +312,36 @@ function renderTable() {
     let count = 0;
 
     keys.forEach(key => {
-        const val = currentSnippets[key];
+        const rawVal = currentSnippets[key];
+        const data = normalizeSnippet(rawVal);
         
-        // 検索フィルタ
-        if (filterText && !key.toLowerCase().includes(filterText) && !val.toLowerCase().includes(filterText)) {
-            return;
-        }
+        // 検索フィルタ (body または sites にヒットするか)
+        const searchTarget = (key + data.body + data.sites.join(' ')).toLowerCase();
+        if (filterText && !searchTarget.includes(filterText)) return;
 
         const tr = document.createElement('tr');
-        
-        // キーワード列
+
+        // キーワード
         const tdKey = document.createElement('td');
-        tdKey.textContent = key; // XSS対策: textContentを使う
+        tdKey.textContent = key;
         tr.appendChild(tdKey);
 
-        // コンテンツ列（プレビュー）
+        // 展開内容
         const tdVal = document.createElement('td');
-        // ここはHTMLとして表示したいが、script等はsanitize済みである前提
-        // 念のためここでも安全な表示にするなら textContent だが、装飾を見せたいので innerHTML
-        // Sanitizerを通したデータしか入っていないはずだが、防御的プログラミングとして
-        // 表示時にも再度サニタイズしても良い。ここではデータ格納時にサニタイズ済みと信頼する。
-        tdVal.innerHTML = val; 
+        tdVal.innerHTML = data.body; 
         tr.appendChild(tdVal);
+
+        // 対象サイト列
+        const tdSites = document.createElement('td');
+        if (data.sites.length === 0) {
+            tdSites.innerHTML = '<span class="badge global">全サイト</span>';
+        } else {
+            // タグ表示
+            tdSites.innerHTML = data.sites.map(s => 
+                `<span class="badge site">${escapeHtml(s)}</span>`
+            ).join(' ');
+        }
+        tr.appendChild(tdSites);
 
         // 操作列
         const tdAction = document.createElement('td');
@@ -305,7 +411,7 @@ async function handleImport() {
             
             // 1. 型チェック（オブジェクトであること）
             if (typeof json !== 'object' || json === null || Array.isArray(json)) {
-                throw new Error('JSONのルートはオブジェクト形式(Map)である必要があります。');
+                throw new Error('JSONの形式が正しくありません。');
             }
 
             // 2. コンテンツバリデーション
@@ -314,21 +420,42 @@ async function handleImport() {
             const newDataSet = {};
 
             for (const [key, val] of Object.entries(json)) {
-                // キーと値が文字列であることを確認
-                if (typeof key !== 'string' || typeof val !== 'string') {
+                // キーが文字列
+                if (typeof key !== 'string' || !key.trim()){
                     invalidCount++;
                     continue;
                 }
-                
-                // サニタイズ
                 const cleanKey = key.trim();
-                if (!cleanKey) {
+
+                let cleanData;
+                if (typeof val === 'string') {
+                    // ケースA: 旧形式（値が文字列）
+                    // v2形式へアップグレードして取り込む
+                    cleanData = {
+                        body: Sanitizer.sanitize(val),
+                        sites: [] // サイト指定なし
+                    };
+                } 
+                else if (typeof val === 'object' && val !== null && !Array.isArray(val)) {
+                    // ケースB: 新形式（値がオブジェクト）
+                    // 必須フィールド 'body' の存在チェック
+                    if (typeof val.body !== 'string') {
+                        // bodyが無い、または文字列じゃない場合は不正データとみなす
+                        invalidCount++;
+                        continue;
+                    }
+
+                    cleanData = {
+                        body: Sanitizer.sanitize(val.body),
+                        sites: Array.isArray(val.sites) ? val.sites : [] // sitesが無ければ空配列
+                    };
+                } 
+                else {
+                    // ケースC: それ以外の型（数値や配列など）は不正
                     invalidCount++;
                     continue;
                 }
-                const cleanVal = Sanitizer.sanitize(val);
-                
-                newDataSet[cleanKey] = cleanVal;
+                newDataSet[cleanKey] = cleanData;
                 validCount++;
             }
 

@@ -24,11 +24,15 @@
                     </div>
                     
                     <div class="form-group">
-                        <label for="inputReplacement">展開テキスト (HTML可)</label>
+                        <label for="inputReplacement">展開テキスト (HTML一部可)</label>
                         <textarea id="inputReplacement" rows="4" placeholder="例: <b>交通:</b> 徒歩5分<br>"></textarea>
-                        <small>許可タグ: &lt;b&gt;, &lt;font&gt;, &lt;br&gt; 等。スクリプトは除去されます。</small>
+                        <small>許可タグ: &lt;b&gt;, &lt;font&gt;, &lt;br&gt; 等。それ以外は削除。</small>
                     </div>
-
+                    <div class="form-group">
+                        <label for="inputSites">有効サイト (空欄で全サイト許可)</label>
+                        <input type="text" id="inputSites" placeholder="例: suumo.jp, kensakun.net (カンマ[,]区切り)">
+                        <small>特定のサイトでのみ有効にしたい場合に入力します。後方一致で判定。</small>
+                    </div>
                     <div class="actions">
                         <button type="submit" class="btn primary">保存</button>
                         <button type="button" id="btnCancel" class="btn secondary" style="display:none;">キャンセル</button>
@@ -47,6 +51,7 @@
                             <tr>
                                 <th width="20%">キーワード</th>
                                 <th width="60%">展開内容 (プレビュー)</th>
+                                <th width="20%">対象サイト</th>
                                 <th width="20%">操作</th>
                             </tr>
                         </thead>
@@ -75,6 +80,17 @@
                         <button id="btnImport" class="btn warning">読み込み実行</button>
                     </div>
                 </div>
+            </section>
+            <section class="card settings-section">
+                <h2>システム設定</h2>
+                <div class="form-group checkbox-group">
+                    <input type="checkbox" id="checkDebugMode">
+                    <label for="checkDebugMode" class="checkDebugMode">デバッグモードを有効にする</label>
+                </div>
+                <p class="hint">
+                有効にすると、開発者ツール(F12)のコンソールに詳細な動作ログが出力されます。<br>
+                通常利用時はOFFにすることを推奨します。
+                </p>
             </section>
         </main>
     </div>

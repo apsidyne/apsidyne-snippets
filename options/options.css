@@ -2,7 +2,7 @@
 
 /**
  * Options Page Styles
- *  @author Apsidyne＠gmail.com
+ *  @author Apsidyne+ext2025[at]gmail.com
 **/
 
 :root {
@@ -161,6 +161,9 @@ small {
     cursor: pointer;
     border: 1px solid transparent;
     border-radius: 4px;
+    white-space: nowrap;
+    min-width: 60px;
+    display: inline-block;
 }
 
 .btn-edit {
@@ -295,4 +298,29 @@ td {
     #searchBox {
         width: 100%;
     }
+}
+
+/* サイト指定 */
+.badge {
+    display: inline-block;
+    padding: 2px 8px;
+    font-size: 12px;
+    font-weight: bold;
+    line-height: 1;
+     border-radius: 12px;
+    vertical-align: middle;
+    margin-left: 5px;
+}
+.badge.global {
+   color: #ffffff;
+    background-color: #6c757d;
+}
+.badge.site {
+    color: #0d47a1;
+    background-color: #e3f2fd;
+}
+
+/* for debug */
+.checkDebugMode {
+    display: inline-block;
 }

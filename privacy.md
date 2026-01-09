@@ -17,4 +17,4 @@ This Extension does not use any third-party analytics or tracking services.
 
 ## 5. Contact
 If you have any questions about this Privacy Policy, please contact us at:
-**Email:** Apsidyne@gmail.com
+**Email:** Apsidyne[at]gmail.com
