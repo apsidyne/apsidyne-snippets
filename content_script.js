@@ -12,7 +12,7 @@
 
 
 //
-import { config , setDebugMode, getDebugMode} from './config.js';
+import { config, getDebugMode} from './config.js';
 import { Logger } from './lib/logger.js';
 
 
@@ -22,12 +22,12 @@ import { Logger } from './lib/logger.js';
     const logger = new Logger('ContentScript');
 
     logger.info(config.TRIGGER_KEY);
-    config.debugMode = getDebugMode();
-    console.log("config.debugMode",config.debugMode);
+    let debugMode = getDebugMode();
+    console.log("config.debugMode",debugMode);
 
 logger.info("info");
 logger.debug("debug");
-logger.error("error","error");
+//logger.error("error","error");
 
     // 多重読み込み防止
     if (window.hasRealEstateSnippetRun) {

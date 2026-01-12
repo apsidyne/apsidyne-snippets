@@ -3,6 +3,7 @@
   *  @author Apsidyne+ext2025[at]gmail.com
  **/
 
+ import { setDebugMode, getDebugMode } from '../config.js';
 import { Sanitizer } from '../lib/sanitizer.js';
 import { Logger } from '../lib/logger.js';
 
@@ -122,7 +123,7 @@ const saveSettings = async () => {
     try {
         const isDebug = elements.debugCheckbox.checked;
         
-        // 既存の設定を取得してマージ（今はdebugModeしかないが、将来のため）
+        // 既存の設定を取得してマージ
         const result = await chrome.storage.local.get(['settings']);
         const currentSettings = result.settings || {};
         
@@ -131,6 +132,9 @@ const saveSettings = async () => {
             debugMode: isDebug
         };
 
+        await setDebugMode(isDebug);   // 今はdebugModeしかない
+        // debugレベルをstorageに保存する場合、storageのエラー時のdebugModeはどうあるべきなのか。
+        //console.log("isDebug", isDebug);
         await chrome.storage.local.set({ settings: newSettings });
         
         if (isDebug) {
