@@ -1,9 +1,10 @@
-# apsidyne-snippets
-#
-# Apsidyne Entry Assistant Snippet Tool
+# Apsidyne-Snippets
+# 入力支援　スニペット　置換ツール　(Apsidyne Snippets Tool)
+![version](https://img.shields.io/badge/version-2.0.0-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## 概要 (Overview)
-Apsidyne Entry Assistant Snippet Tool は、主に不動産情報の入稿業務を支援するために設計された、Google Chrome拡張機能です。ユーザーのキー入力を監視し、事前に登録されたキーワードを検知すると、即座に定型文へと置換・DOM展開を行います。
+Apsidyne Snippets Tool は、主に不動産情報の入稿業務を支援するために設計された、Google Chrome拡張機能です。ユーザーのキー入力を監視し、事前に登録されたキーワードを検知すると、即座に定型文へと置換・DOM展開を行います。
 
 設計思想として「ローカル完結」を掲げ、機密性の高いデータを扱う現場でも安心して利用できる堅牢なアーキテクチャを採用しています。
 
@@ -36,7 +37,7 @@ Apsidyne Entry Assistant Snippet Tool は、主に不動産情報の入稿業務
 ## 使い方 (Usage)
 1. スニペットの登録ポップアップメニュー、またはオプション画面からスニペットを登録します。項目説明キーワード置換のトリガーとなる文字列 (例: ldk)置換内容展開される文字列またはHTML 説明管理用のメモなど。
 2. 登録後は、目的のサイトの入力欄でキーワードを入力して、「；」キー押下で変換されます。
-3. IME日本語入力中は、置換動作は停止しています。動作中に意図せずに変換が発火してしまったっ場合は、　CTRL＋Z で変換前の入力状態に戻れます。
+3. IME日本語入力中は、置換動作は停止しています。動作中に意図せずに変換が発火してしまった場合は、　CTRL＋Z で変換前の入力状態に戻れます。
 
 ## インポート／エクスポート (Import / Export)
 設定画面より、登録済みスニペットをJSONファイルとして書き出し（エクスポート）、読み込み（インポート）が可能です。

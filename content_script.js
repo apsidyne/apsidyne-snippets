@@ -16,18 +16,19 @@ import { config, getDebugMode} from './config.js';
 import { Logger } from './lib/logger.js';
 
 
-(function () {
+(async function () {
     'use strict';
 
     const logger = new Logger('ContentScript');
 
     logger.info(config.TRIGGER_KEY);
-    let debugMode = getDebugMode();
-    console.log("config.debugMode",debugMode);
-
-logger.info("info");
-logger.debug("debug");
-//logger.error("error","error");
+    let debugMode = false;
+    try {
+        let debugMode = await getDebugMode();
+    } catch(e) {
+        console.error("設定読み込み失敗:",e);
+    }
+    logger.info(`DebugMode: ${debugMode}`);
 
     // 多重読み込み防止
     if (window.hasRealEstateSnippetRun) {
