@@ -1,8 +1,7 @@
 /**
  * Apsidyne Entry Assistant Snippet Tool
  *  : ユーザーのキー入力を監視し、キーワード置換とDOM操作を行う。
- *  @author Apsidyne+ext2025[at]gmail.com
- *  @version 1.0.0
+ *  @author Apsidyne+ext2025[at]gmail(dot)com
  **/
 
 
@@ -21,10 +20,10 @@ import { Logger } from './lib/logger.js';
 
     const logger = new Logger('ContentScript');
 
-    logger.info(config.TRIGGER_KEY);
+    logger.debug(config.TRIGGER_KEY);
     let debugMode = false;
     try {
-        let debugMode = await getDebugMode();
+        debugMode = await getDebugMode();
     } catch(e) {
         console.error("設定読み込み失敗:",e);
     }

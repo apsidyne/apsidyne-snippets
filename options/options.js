@@ -1,9 +1,9 @@
  /**
   * Apsidyne Tool - Options
-  *  @author Apsidyne+ext2025[at]gmail.com
+ *  @author Apsidyne+ext2025[at]gmail(dot)com
  **/
 
- import { setDebugMode, getDebugMode } from '../config.js';
+import { setDebugMode, getDebugMode } from '../config.js';
 import { Sanitizer } from '../lib/sanitizer.js';
 import { Logger } from '../lib/logger.js';
 

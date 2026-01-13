@@ -63,7 +63,7 @@ JSON[
    * scripting: 入力監視スクリプト動作のため
 3. Supported Tags (Whitelist): 
    * 'b', 'strong', 'i', 'em', 'u', 'font', 'br', 'p', 'span', 'div',
-   * 'color', 'size', 'face', 'style', 'class',
+   * 'color', 'size', 'face',
 
 
 ## 免責事項 (Disclaimer)
@@ -74,4 +74,4 @@ JSON[
 * v2.0.0: 使用サイト指定を追加。Date Format追加変更があり　version 2 とする。
 
 ## Author
-@author Apsidyne+ext2025[at]gmail.com since 2025
+@author Apsidyne　since 2025

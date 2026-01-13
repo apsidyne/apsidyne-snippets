@@ -1,10 +1,10 @@
 {
     "extName":{
-        "message":"Apsidyne Entry Assistant Snippet Tool",
-        "description": "キーワードを定型文に置換する。"
+        "message":"Apsidyne-Snippets",
+        "description": "タイトル。Apsidyne Snippets"
     },
     "extDescription":{
-        "message":"入力支援ツール。文字を置換",
-        "descriptioin":"機能説明"
+        "message":"入力支援。スニペット置換ツール(Snippets Tool)",
+        "descriptioin":"ツールの機能説明 入力文字を登録文字列に置換するツール"
     }
 }
