@@ -1,6 +1,6 @@
 # Apsidyne-Snippets
 # 入力支援　スニペット　置換ツール　(Apsidyne Snippets Tool)
-![version](https://img.shields.io/badge/version-2.0.0-blue.svg)
+![version](https://img.shields.io/badge/version-2.0.1-blue.svg)
 ![License](https://img.shields.io/badge/license-MIT-green.svg)
 
 ## 概要 (Overview)
